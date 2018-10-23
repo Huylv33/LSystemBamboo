@@ -9,25 +9,29 @@
 using namespace std;
 float width = 5.0;
 float lengthScale = 0.75;
-float leng1 = 2;
+float leng1 = 3;
 float leng2 = 5;
 float leng3 = 2.5;
 float leng4 = 1;
 float angle = 23;
-void DrawLine();
+void drawLine();
 void draw();
 
 struct {
 	char f = 'F';
 	char k = 'K';
-	string F = "D[++M[+++++X]][--M[-----X]]BD[--M[-----X]]BD[++M[+++++X]]^B";
+	//string F = "D[++M[+++++X]][--M[-----X]]BD[--M[-----X]]BD[++M[+++++X]]^B";
+    string F = "D[++M[+++++X]][--C[---X---X]]BD[--M[-----X]]BD[++M[+++++X]]^B";
+
 	string G = "[^^[[[+++^X]]^L[++^X]^K[++^X]]]";
 	//string F = "F+F--F+F";
+
 }Rules;
 
-string axiom = "F";
-string str = axiom;
-string strcrown = axiom;
+string axiom1 = "[F";
+string axiom2 = "F";
+string str = axiom1;
+string strcrown = axiom2;
 void Init()
 {
 	glClearColor(0.0, 0.0, 0.0, 0.0);
@@ -70,15 +74,13 @@ void TurnRight() {
 
 }
 void TurnRightWithCustomizedAngle() {
-
 	glRotatef(-1, 0, 0, 1);
-
+}
+void TurnLeftWithCustomizeAngle() {
+    glRotatef(4, 0, 0, 1);
 }
 void DrawLine(float scale, float length) {
-
-
-	glLineWidth(width*scale);
-
+	glLineWidth(width * scale);
 	glBegin(GL_LINES);
 	glColor3f(0.0, 1.0, 0.0);// xanh
 	glVertex3f(0,0,0);
@@ -87,7 +89,7 @@ void DrawLine(float scale, float length) {
 	glTranslatef(0, length, 0);
 
 }
-
+// ve dot cay
 void drawDot(){
     float height = 0.1;
     glLineWidth(width);
@@ -104,15 +106,12 @@ void push() {
 void pop() {
 	glPopMatrix();
 }
+// ve la cay
 void drawLeaf(void) {
   glColor3f(0.1,0.9,0.1);
   int scale = 20;
   glBegin(GL_POLYGON);
-//  glVertex2d(0.0,0.0);
-//  glVertex2d(1.5/scale,4.5/scale);
-//  glVertex2d(0,9.0/scale);
-//  glVertex2d(-1.5/scale,4.5/scale);
-//  glVertex2d(0.0,0.0);
+
   glVertex2d(0.0,0.0);
   glVertex2d(1.0/scale,1.0/scale);
   glVertex2d(0.8/scale,5.0/scale);
@@ -122,30 +121,20 @@ void drawLeaf(void) {
   glVertex2d(0.0,0.0);
   glEnd();
 }
+// sinh than cay
 void generateBody() {
-
 	string strCurrent = Rules.F;
-//	string strCurrent = "";
-//	for (int i = 0; i < str.length(); i++) {
-//		char current =  str.at(i);
-//		if (current == Rules.f) {
-//			strCurrent += Rules.F;
-//		}
-//		else
-//			strCurrent += current;
-//
-//
-//	}
-	cout << "Body: " << strCurrent;
-
+	cout << strCurrent;
 	str += strCurrent;
-
 }
+// sinh  ngon cay
+
 void generateCrown() {
     leng1 = lengthScale*leng1;
 	leng2 = lengthScale*leng2;
 	leng3 = lengthScale*leng3;
 	leng4 = lengthScale*leng4;
+
 	string strCurrent = "";
 
 	for (int i = 0; i < strcrown.length(); i++) {
@@ -172,10 +161,13 @@ void draw() {
 		}
 		else if (current == 'B') {
 			// turn Left
-			DrawLine(1.0, leng1);
+			DrawLine(1.0, leng1 );
 		}
 		else if(current == 'L' || current == 'K') {
             DrawLine(0.35, leng1);
+		}
+		else if (current == 'C') {
+            DrawLine(0.3, leng1 * 0.75);
 		}
 		else if(current == 'M') {
             DrawLine(0.2, leng1*0.2);
@@ -195,7 +187,9 @@ void draw() {
 			// turn Left
 			TurnLeft();
 		}
-
+        else if (current == '*') {;
+            TurnLeftWithCustomizeAngle();
+        }
         else if (current == '^') {
             // turn Left with customized angle
             TurnRightWithCustomizedAngle();
@@ -227,31 +221,48 @@ int main(int argc, char** argv)
 	for (int i = 0; i < 2; i++) {
 		generateBody();
 		cout<< "\n";
+
 	}
 	//cout << str << "\n\n";
 	string temp = str;
+
 	int branchNum = 3;
-	for(int i = 0;i < branchNum; ++i){
+	for(int i = 0;i<branchNum;++i){
         for (int j = 0; j < 2; j++) {
             generateCrown();
             cout<< "\n";
         }
-		leng1 = leng1 / lengthScale;
-		leng2 = leng2 / lengthScale;
-		leng3 = leng3 / lengthScale;
-		leng4 = leng4 / lengthScale;
-		strcrown = axiom;
+		leng1 = leng1/lengthScale;
+		leng2 = leng2/lengthScale;
+		leng3 = leng3/lengthScale;
+		leng4 = leng4/lengthScale;
+		strcrown = axiom2;
 		if(i != branchNum-1) str +="^^L+";
 	}
-    cout << "final: " << str;
-	glutReshapeFunc(ReShape);
+    cout << str;
+    str += "]*";
+    for (int i = 0; i < 2; i++) {
+		generateBody();
+		cout<< "\n";
+	}
+	int branchNum2 = 4;
+	for(int i = 0;i<branchNum2;++i){
+        for (int j = 0; j < 2; j++) {
+            generateCrown();
+            cout<< "\n";
+        }
+		leng1 = leng1/(lengthScale /1.2);
+		leng2 = leng2/lengthScale;
+		leng3 = leng3/lengthScale;
+		leng4 = leng4/lengthScale;
+		strcrown = axiom2;
+		if(i != branchNum2-1) str +="**L-";
+	}
 
+	glutReshapeFunc(ReShape);
 	glutDisplayFunc(RenderScene);
 	glutMainLoop();
-
 	return 0;
-
-
 }
 
 
