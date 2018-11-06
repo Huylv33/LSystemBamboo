@@ -7,9 +7,9 @@
 #include<string>
 #include<stack>
 using namespace std;
-float width = 5.0;
+float width = 8.0;
 float lengthScale = 0.75;
-float leng1 = 3;
+float leng1 = 0.95;
 float leng2 = 5;
 float leng3 = 2.5;
 float leng4 = 1;
@@ -21,7 +21,7 @@ struct {
 	char f = 'F';
 	char k = 'K';
 	//string F = "D[++M[+++++X]][--M[-----X]]BD[--M[-----X]]BD[++M[+++++X]]^B";
-    string F = "D[++M[+++++X]][--C[---X---X]]BD[--M[-----X]]BD[++M[+++++X]]^B";
+    string F = "D[++M[+++++X--X]][--C[---X---X++X]]BD[--M[-----X++X]]BD[++M[+++++X]][++C[+++X+++X--X]]^B";
 
 	string G = "[^^[[[+++^X]]^L[++^X]^K[++^X]]]";
 	//string F = "F+F--F+F";
@@ -79,10 +79,12 @@ void TurnRightWithCustomizedAngle() {
 void TurnLeftWithCustomizeAngle() {
     glRotatef(4, 0, 0, 1);
 }
-void DrawLine(float scale, float length) {
+void DrawLine(float scale, float length, int colorMode) {
 	glLineWidth(width * scale);
 	glBegin(GL_LINES);
-	glColor3f(0.0, 1.0, 0.0);// xanh
+	if(colorMode == 1)
+        glColor3f(0.0, 0.0, 0.0);
+    else glColor3f(0.0, 1.0, 0.4);// xanh
 	glVertex3f(0,0,0);
 	glVertex3f(0,length,0);
 	glEnd();
@@ -91,7 +93,7 @@ void DrawLine(float scale, float length) {
 }
 // ve dot cay
 void drawDot(){
-    float height = 0.1;
+    float height = 0.05;
     glLineWidth(width);
 	glBegin(GL_LINES);
 	glColor3f(1, 1, 1);// trang
@@ -130,11 +132,11 @@ void generateBody() {
 // sinh  ngon cay
 
 void generateCrown() {
-    leng1 = lengthScale*leng1;
+    /*leng1 = lengthScale*leng1;
 	leng2 = lengthScale*leng2;
 	leng3 = lengthScale*leng3;
 	leng4 = lengthScale*leng4;
-
+    */
 	string strCurrent = "";
 
 	for (int i = 0; i < strcrown.length(); i++) {
@@ -156,21 +158,24 @@ void draw() {
 		char current = str.at(i);
 		if (current == 'F') {
 			// drawLine
-			DrawLine(1.0, leng1);
+			DrawLine(1.0, leng1,0);
 			//glTranslated(x, y + 5, z);
 		}
 		else if (current == 'B') {
 			// turn Left
-			DrawLine(1.0, leng1 );
+			DrawLine(1.0, leng1,0);
 		}
 		else if(current == 'L' || current == 'K') {
-            DrawLine(0.35, leng1);
+            DrawLine(0.45, leng1,0);
 		}
 		else if (current == 'C') {
-            DrawLine(0.3, leng1 * 0.75);
+            DrawLine(0.3, leng1 * 0.75,0);
 		}
 		else if(current == 'M') {
-            DrawLine(0.2, leng1*0.2);
+            DrawLine(0.2, leng1*0.2,0);
+		}
+		else if (current == 'H') {
+            DrawLine(1.0, leng1*0.6,1);
 		}
 		else if (current == 'X') {
 			// turn Left
@@ -187,6 +192,7 @@ void draw() {
 			// turn Left
 			TurnLeft();
 		}
+
         else if (current == '*') {;
             TurnLeftWithCustomizeAngle();
         }
@@ -205,6 +211,56 @@ void draw() {
 
 	}
 }
+void generateTree()
+{
+	int treeNum = 6;
+	for(int iter = 0;iter < treeNum;iter++ ){
+		for (int i = 0; i < 2; i++) {
+		generateBody();
+		cout<< "\n";
+		}
+		int branchNum = 3;
+		for(int i = 0;i<branchNum;++i){
+	        for (int j = 0; j < 2; j++) {
+	            generateCrown();
+	            cout<< "\n";
+	        }
+			/*leng1 = leng1/lengthScale;
+			leng2 = leng2/lengthScale;
+			leng3 = leng3/lengthScale;
+			leng4 = leng4/lengthScale; */
+			strcrown = axiom2;
+			if(i != branchNum-1) str +="^^L+";
+		}
+	    cout << str;
+	 //   leng1 = leng1*lengthScale*2;
+//	    leng2 = leng2*lengthScale;
+//        leng3 = leng3*lengthScale;
+//        leng4 = leng4*lengthScale;
+        string h = "";
+      /*  for(int i = 0;i<iter+1;++i)
+        {
+            h += "H";
+        }*/
+       // string addString = "][++++" + h + "----^^";
+        string addString;
+        if (iter % 2 == 0) {
+            if (iter != 0) for (int i = 0; i < iter; ++i) h+= "H";
+            addString = "][++++" + h + "----^^^^^^^^^^^^^";
+
+        }
+        else {
+            for (int i = 0; i < iter + 1; ++i) h += "H";
+            addString = "][++++" + h + "----^^^^^^";
+        }
+
+        if (iter!= treeNum - 1) addString += "B";
+	    str += addString ; //tach ve cay lien ke
+	}
+
+
+
+}
 int main(int argc, char** argv)
 {
     glutInit(&argc, argv);
@@ -218,51 +274,15 @@ int main(int argc, char** argv)
 	glutCreateWindow("BTL");
 
 	Init();
-	for (int i = 0; i < 2; i++) {
-		generateBody();
-		cout<< "\n";
-
-	}
+	generateTree();
 	//cout << str << "\n\n";
 	string temp = str;
 
-	int branchNum = 3;
-	for(int i = 0;i<branchNum;++i){
-        for (int j = 0; j < 2; j++) {
-            generateCrown();
-            cout<< "\n";
-        }
-		leng1 = leng1/lengthScale;
-		leng2 = leng2/lengthScale;
-		leng3 = leng3/lengthScale;
-		leng4 = leng4/lengthScale;
-		strcrown = axiom2;
-		if(i != branchNum-1) str +="^^L+";
-	}
-    cout << str;
-    str += "]*";
-    for (int i = 0; i < 2; i++) {
-		generateBody();
-		cout<< "\n";
-	}
-	int branchNum2 = 4;
-	for(int i = 0;i<branchNum2;++i){
-        for (int j = 0; j < 2; j++) {
-            generateCrown();
-            cout<< "\n";
-        }
-		leng1 = leng1/(lengthScale /1.2);
-		leng2 = leng2/lengthScale;
-		leng3 = leng3/lengthScale;
-		leng4 = leng4/lengthScale;
-		strcrown = axiom2;
-		if(i != branchNum2-1) str +="**L-";
-	}
+
 
 	glutReshapeFunc(ReShape);
 	glutDisplayFunc(RenderScene);
 	glutMainLoop();
 	return 0;
 }
-
 
