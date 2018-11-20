@@ -3,286 +3,455 @@
 //#elseif
 #include<gl/glut.h>
 //#endif // __APPLE__
+#include <Windows.h>
+#include <Mmsystem.h>
+#include <stack>
+#include <stdlib.h>
+#include <fstream>
 #include <iostream>
-#include<string>
-#include<stack>
+#include <vector>
+#include <string>
+#include <math.h>
+#include <time.h>;
+
 using namespace std;
-float width = 8.0;
+
+const float PI = 3.14;
+const int treeNum = 4;
+float ANGLE = 20, depth = 0;
+
+double lastTime = 0, elapsedTime = 0, lastElapsedTime = 0;
+
+float eyeX, eyeY, eyeZ, lookX, lookY, lookZ,
+      upX, upY, upZ, fieldOfView, num = 0,
+                                  incr = 0.1;
 float lengthScale = 0.75;
-float leng1 = 0.95;
-float leng2 = 5;
-float leng3 = 2.5;
-float leng4 = 1;
-float angle = 23;
-void drawLine();
-void draw();
+float leng1 = 10;
+float lineWidth = 5;
 
 struct {
-	char f = 'F';
-	char k = 'K';
-	//string F = "D[++M[+++++X]][--M[-----X]]BD[--M[-----X]]BD[++M[+++++X]]^B";
-    string F = "D[++M[+++++X--X]][--C[---X---X++X]]BD[--M[-----X++X]]BD[++M[+++++X]][++C[+++X+++X--X]]^B";
-
-	string G = "[^^[[[+++^X]]^L[++^X]^K[++^X]]]";
-	//string F = "F+F--F+F";
-
-}Rules;
-
+    char f = 'F';
+    char k = 'K';
+    string F = "D[++M[----X]]^BD[--M[++++X]]BD^B";
+    string G = "[+K[----X][--X]^^^LK[----X][--X]^^^^K[----X][--X]]";
+} Rules;
 string axiom1 = "[F";
 string axiom2 = "F";
 string str = axiom1;
 string strcrown = axiom2;
-void Init()
-{
-	glClearColor(0.0, 0.0, 0.0, 0.0);
-}
 
-void init(void)
-{
-	glClearColor(0.0, 0.0, 0.0, 0.0);
-	glShadeModel(GL_FLAT);
-}
-
-void ReShape(int width, int height)
-{
-	glViewport(0, 0, width, height);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(-10.0, 10.0, -10.0, 10.0, 10.0, -10.0);
-	glMatrixMode(GL_MODELVIEW);
-}
-
-void RenderScene()
-{
-
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glLoadIdentity();
-
-	draw();
-
-	glFlush();
-
-}
-void TurnLeft() {
-
-	glRotatef(angle, 0, 0, 1);
-
-}
-void TurnRight() {
-
-	glRotatef(-angle, 0, 0, 1);
-
-}
-void TurnRightWithCustomizedAngle() {
-	glRotatef(-1, 0, 0, 1);
-}
-void TurnLeftWithCustomizeAngle() {
-    glRotatef(4, 0, 0, 1);
-}
-void DrawLine(float scale, float length, int colorMode) {
-	glLineWidth(width * scale);
-	glBegin(GL_LINES);
-	if(colorMode == 1)
-        glColor3f(0.0, 0.0, 0.0);
-    else glColor3f(0.0, 1.0, 0.4);// xanh
-	glVertex3f(0,0,0);
-	glVertex3f(0,length,0);
-	glEnd();
-	glTranslatef(0, length, 0);
-
-}
-// ve dot cay
-void drawDot(){
-    float height = 0.05;
-    glLineWidth(width);
-	glBegin(GL_LINES);
-	glColor3f(1, 1, 1);// trang
-	glVertex3f(0,0,0);
-	glVertex3f(0,height,0);
-	glEnd();
-	glTranslatef(0, height, 0);
-}
 void push() {
-	glPushMatrix();
+    glPushMatrix();
 }
-void pop() {
-	glPopMatrix();
-}
-// ve la cay
-void drawLeaf(void) {
-  glColor3f(0.1,0.9,0.1);
-  int scale = 20;
-  glBegin(GL_POLYGON);
 
-  glVertex2d(0.0,0.0);
-  glVertex2d(1.0/scale,1.0/scale);
-  glVertex2d(0.8/scale,5.0/scale);
-  glVertex2d(0,9.0/scale);
-  glVertex2d(-0.8/scale,5.0/scale);
-  glVertex2d(-1.0/scale,1.0/scale);
-  glVertex2d(0.0,0.0);
-  glEnd();
+void pop() {
+    glPopMatrix();
 }
-// sinh than cay
+
+//Rotate
+void rotL() {
+    glRotatef(ANGLE, 1, 0, 0);
+    glRotatef(ANGLE*2, 0, 1, 0);
+    glRotatef(ANGLE, 0, 0, 1);
+}
+void rotLSmaller() {
+    glRotatef(1, 1, 0, 0);
+    glRotatef(1*2, 0, 1, 0);
+    glRotatef(1, 0, 0, 1);
+}
+void rotR() {
+    glRotatef(-ANGLE, 1, 0, 0);
+    glRotatef(ANGLE*2, 0, 1, 0);
+    glRotatef(-ANGLE, 0, 0, 1);
+}
+void rotRSmaller() {
+    glRotatef(-1, 1, 0, 0);
+    glRotatef(4*2, 0, 1, 0);
+    glRotatef(-1, 0, 0, 1);
+}
+void rotXminus90() {
+    glRotatef(90, -1, 0, 0);
+}
+void rotXplus90() {
+    glRotatef(90, 1, 0, 0);
+}
+
+void DrawLeaf() {
+    glPushAttrib(GL_LIGHTING_BIT);
+    glEnable(GL_COLOR_MATERIAL);
+    GLfloat ambient[4] = { 0.50, 1.0, 0.0 };
+    GLfloat specular[4] = { 0.1, 1.0, 0.0 };
+    GLfloat diffuse[4] = { 0.50, 1.0, 0.0 };
+
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient);
+
+    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse);
+
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular);
+
+    glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 20.0);
+
+    float scale = 2;
+    glBegin(GL_POLYGON);
+    glVertex3f(0, 0, 0);
+    glVertex3f(-1/scale, 0/scale, -3/scale);
+    glVertex3f(-1/scale, 4/scale, -3/scale);
+    glVertex3f(-1/scale, 6/scale, -3/scale);
+    glVertex3f(1/scale, 1/scale, -3/scale);
+    glVertex3f(-1/scale, 0/scale, -3/scale);
+    glVertex3f(0, 0/scale, 0);
+    glEnd();
+    glPopAttrib();
+}
+
+void DrawLine(float width,float leng, int colorMode) {
+    glPushAttrib(GL_LIGHTING_BIT);
+    if(colorMode == 0)
+        glColor3ub(81, 114, 1);
+    else if(colorMode == 1)
+        glColor3ub(230, 195, 77);
+    else if(colorMode == 2){
+        glColor3ub(60, 30, 22);
+    }
+
+    GLfloat ambient[4] = {0.55, 0.27, 0.07};
+    GLfloat specular[4] = {0.55, 0.27, 0.07};
+    GLfloat diffuse[4] = {0.55, 0.27, 0.07};
+
+    glEnable(GL_COLOR_MATERIAL);
+
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient);
+
+    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse);
+    glLineWidth(width*1.5);
+
+    glBegin(GL_LINES);
+
+    glVertex3f(0, 0, 0);
+    glVertex3f(0, leng, 0);
+    glEnd();
+
+    glTranslatef(0, leng, 0);
+	glPopAttrib();
+}
+
+
 void generateBody() {
-	string strCurrent = Rules.F;
-	cout << strCurrent;
-	str += strCurrent;
+    string strCurrent = Rules.F;
+    cout << strCurrent;
+    str += strCurrent;
 }
-// sinh  ngon cay
+
 
 void generateCrown() {
-    /*leng1 = lengthScale*leng1;
-	leng2 = lengthScale*leng2;
-	leng3 = lengthScale*leng3;
-	leng4 = lengthScale*leng4;
-    */
-	string strCurrent = "";
+    leng1 = lengthScale*leng1;
 
-	for (int i = 0; i < strcrown.length(); i++) {
-		char current =  strcrown.at(i);
-		if (current == Rules.f || current == Rules.k) {
-			strCurrent += Rules.G;
-		}
-		else
-			strCurrent += current;
-	}
+    string strCurrent = "";
+
+    for (int i = 0; i < strcrown.length(); i++) {
+        char current =  strcrown.at(i);
+        if (current == Rules.f || current == Rules.k) {
+            strCurrent += Rules.G;
+        }
+        else
+            strCurrent += current;
+    }
     strcrown += strCurrent;
-	str += strCurrent;
-	cout <<  strCurrent << " " << strCurrent.length() << "\n";
+    str += strCurrent;
+    cout <<  strCurrent << " " << strCurrent.length() << "\n";
 }
+
 void draw() {
-	stack <char> S;
+    stack <char> S;
 
-	for (int i = 0; i < str.length(); i++) {
-		char current = str.at(i);
-		if (current == 'F') {
-			// drawLine
-			DrawLine(1.0, leng1,0);
-			//glTranslated(x, y + 5, z);
-		}
-		else if (current == 'B') {
-			// turn Left
-			DrawLine(1.0, leng1,0);
-		}
-		else if(current == 'L' || current == 'K') {
-            DrawLine(0.45, leng1,0);
-		}
-		else if (current == 'C') {
-            DrawLine(0.3, leng1 * 0.75,0);
-		}
-		else if(current == 'M') {
-            DrawLine(0.2, leng1*0.2,0);
-		}
-		else if (current == 'H') {
-            DrawLine(1.0, leng1*0.6,1);
-		}
-		else if (current == 'X') {
-			// turn Left
-			drawLeaf();
-		}
-		else if (current == 'D'){
-            drawDot();
-		}
-		else if (current == '+') {
-			// turn Right
-			TurnRight();
-		}
-		else if (current == '-') {
-			// turn Left
-			TurnLeft();
-		}
-
-        else if (current == '*') {;
-            TurnLeftWithCustomizeAngle();
-        }
-        else if (current == '^') {
-            // turn Left with customized angle
-            TurnRightWithCustomizedAngle();
-        }
-		else if (current == '[') {
-			push();
-			S.push(1);
-		}
-		else if(current == ']') {
-			pop();
-			S.pop();
-		}
-
-	}
-}
-void generateTree()
-{
-	int treeNum = 6;
-	for(int iter = 0;iter < treeNum;iter++ ){
-		for (int i = 0; i < 2; i++) {
-		generateBody();
-		cout<< "\n";
-		}
-		int branchNum = 3;
-		for(int i = 0;i<branchNum;++i){
-	        for (int j = 0; j < 2; j++) {
-	            generateCrown();
-	            cout<< "\n";
-	        }
-			/*leng1 = leng1/lengthScale;
-			leng2 = leng2/lengthScale;
-			leng3 = leng3/lengthScale;
-			leng4 = leng4/lengthScale; */
-			strcrown = axiom2;
-			if(i != branchNum-1) str +="^^L+";
-		}
-	    cout << str;
-	 //   leng1 = leng1*lengthScale*2;
-//	    leng2 = leng2*lengthScale;
-//        leng3 = leng3*lengthScale;
-//        leng4 = leng4*lengthScale;
-        string h = "";
-      /*  for(int i = 0;i<iter+1;++i)
+    for (int i = 0; i < str.length(); i++)
+    {
+        char current = str.at(i);
+        if (current == 'F')
         {
-            h += "H";
-        }*/
-       // string addString = "][++++" + h + "----^^";
-        string addString;
-        if (iter % 2 == 0) {
-            if (iter != 0) for (int i = 0; i < iter; ++i) h+= "H";
-            addString = "][++++" + h + "----^^^^^^^^^^^^^";
+            DrawLine(1.0*lineWidth, leng1, 0);
+        }
+        else if (current == 'B')
+        {
+            DrawLine(1.0*lineWidth, leng1, 0);
+        }
+        else if(current == 'L' || current == 'K')
+        {
+            DrawLine(0.35*lineWidth, leng1, 0);
+        }
+        else if(current == 'M')
+        {
+            DrawLine(0.2*lineWidth, leng1*0.2, 0);
+        }
+        else if (current == 'H')
+        {
+            DrawLine(1.0*lineWidth, leng1*0.8, 2);
+        }
+        else if (current == 'X')
+        {
+            DrawLeaf();
+        }
+        else if (current == 'D')
+        {
+            DrawLine(1.0*lineWidth, 2, 1);
+        }
+        else if (current == '+')
+        {
+            rotR();
+        }
+        else if (current == '-')
+        {
+            rotL();
+        }
 
+        else if (current == '*')
+        {
+            rotLSmaller();
+        }
+        else if (current == '^')
+        {
+            rotRSmaller();
+        }
+        else if (current == '[')
+        {
+            push();
+            S.push(1);
+        }
+        else if(current == ']')
+        {
+            pop();
+            S.pop();
+        }
+        else if(current == 'S')
+        {
+            rotXminus90();
+        }
+        else if(current == 'P')
+        {
+            rotXplus90();
+        }
+    }
+}
+
+void generateTree() {
+    string h = "";
+    for(int iter = 0; iter < treeNum; iter++ ) {
+        for (int i = 0; i < 3; i++) {
+            generateBody();
+            cout<< "\n";
+        }
+        int branchNum = 1;
+        for (int j = 0; j < 2; j++) {
+            generateCrown();
+            cout<< "\n";
+        }
+        leng1 = leng1*1.5;
+
+        string addString ="";
+
+        if(iter%2==0) {
+            cout << iter << "Re nhanh\n";
+            if(iter == 0)
+                addString="][^^^";
+            else
+                addString="][S" + h + "PB^^^";
         }
         else {
-            for (int i = 0; i < iter + 1; ++i) h += "H";
-            addString = "][++++" + h + "----^^^^^^";
+            cout << iter << "tach cay\n";
+
+            if (iter < treeNum - 1) {
+                for (int i = 0; i < iter+1; i++)
+                    h += "H";
+                addString = "][S" + h;
+                addString += "PB";
+            }
         }
 
-        if (iter!= treeNum - 1) addString += "B";
-	    str += addString ; //tach ve cay lien ke
-	}
+        str += addString ;
+        strcrown = axiom2; //tach ve cay lien ke
 
-
-
+    }
 }
-int main(int argc, char** argv)
+
+void display(void) {
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluPerspective (fieldOfView, 1.0, 1, 2000);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    //tao view nhin
+    gluLookAt(eyeX, eyeY, eyeZ, lookX, lookY, lookZ, 0, 1, 0);
+
+    glPushAttrib(GL_LIGHTING_BIT);
+    glPushMatrix();
+
+
+    GLfloat ambient[] = {0.7f, 0.7f, 0.7f, 1.0f };
+    GLfloat diffuse[] = {0.8f, 0.8f, 0.8f, 1.0f};
+    GLfloat specular[] = {1.0f, 1.0f, 1.0f, 1.0f};
+    GLfloat shininess[] = { 100.0f };
+
+    glColor3ub(160, 25, 50);
+    glEnable(GL_COLOR_MATERIAL);
+
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT,   ambient);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE,   diffuse);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR,  specular);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, shininess);
+
+    glBegin(GL_TRIANGLES);
+    glVertex3f(-20,0,-20);
+    glVertex3f(20,0,-20);
+    glVertex3f(20,0,20);
+    glVertex3f(-20,0,20);
+    glVertex3f(-20,0,-20);
+    glVertex3f(20,0,20);
+    glEnd();
+
+    draw();
+    glPopMatrix();
+    glPopAttrib();
+
+    glutSwapBuffers();
+    glutPostRedisplay();
+}
+
+void animate()
 {
-    glutInit(&argc, argv);
+    //chuyen dong gio thoi
+    if (lastTime == 0)
+        lastTime = timeGetTime();
 
-	glutInitDisplayMode(GLUT_SINGLE || GLUT_RGB);
+    elapsedTime = timeGetTime()-lastTime;
 
-	glutInitWindowSize(1000, 1000);
-
-	glutInitWindowPosition(100, 100);
-
-	glutCreateWindow("BTL");
-
-	Init();
-	generateTree();
-	//cout << str << "\n\n";
-	string temp = str;
+    // thay doi goc
+    float numR = (float) rand()/RAND_MAX;
 
 
+    if (ANGLE > 21.5) {
+        if (numR < 0.5) {
+            incr = -0.15;
+        }
+        else {
+            incr = -0.1;
+        }
+    }
+    else if (ANGLE < 18.5) {
+        if (numR > 0.5) {
+            incr = 0.15;
+        }
+        else {
+            incr = 0.1;
+        }
+    }
+    ANGLE += incr;
 
-	glutReshapeFunc(ReShape);
-	glutDisplayFunc(RenderScene);
-	glutMainLoop();
-	return 0;
+
+    if(elapsedTime-lastElapsedTime > 2000) {
+        lastElapsedTime = elapsedTime;
+    }
+    elapsedTime = elapsedTime/5000;
+    float t = (sin((elapsedTime*PI-PI/2))+1)/2;
+
+    glutPostRedisplay();
 }
 
+void keyboard(unsigned char key, int x, int y) {
+    switch (key) {
+        case 113:			// q - Exit the program
+            exit(0);
+            break;
+        case 119:			// w - Reset the camera
+            fieldOfView = 45;
+            eyeX = 150;
+            eyeY = 100;
+            eyeZ = 150;
+            lookX = 0;
+            lookY = 50;
+            lookZ = 0;
+            break;
+        case 122:			// z - Zoom in
+            fieldOfView -= 5;
+            glutPostRedisplay();
+            break;
+        case 120:			// x - Zoom out
+            fieldOfView += 5;
+            glutPostRedisplay();
+            break;
+    }
+}
+
+void arrowKeyboard(int key, int x, int y){
+    {
+        switch(key){
+        case GLUT_KEY_UP:
+            lookY+=6.0;
+            break;
+        case GLUT_KEY_DOWN:
+            lookY-=6.0;
+            break;
+        case GLUT_KEY_LEFT:
+            lookX-=6.0;
+            break;
+        case GLUT_KEY_RIGHT:
+            lookX+=6.0;
+            break;
+        }
+        glutPostRedisplay();
+    }
+}
+
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);
+    glutInitDisplayMode (GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+    glutInitWindowSize (1280, 900);
+    glutInitWindowPosition (0, 0);
+    glutCreateWindow ("Cay tre L System");
+
+    fieldOfView = 40;
+    eyeX = 250;
+    eyeY = 100;
+    eyeZ = 100;
+    lookX = 0;
+    lookY = 50;
+    lookZ = 0;
+    srand (time(NULL));
+    num = (float) rand()/RAND_MAX;
+
+    GLfloat lightP[4] = {2.0f, 5.0f, 5.0f, 0.0f};
+    glLightfv(GL_LIGHT0, GL_POSITION, lightP);
+
+    GLfloat lightA[4] = {0.0f, 0.6f, 0.0f, 1.0f};
+    glLightfv(GL_LIGHT0, GL_AMBIENT, lightA);
+
+    GLfloat lightS[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+    glLightfv(GL_LIGHT0, GL_SPECULAR, lightS);
+
+    GLfloat lightD[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, lightD);
+
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, lightD);
+
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+
+    glEnable(GL_LIGHT0);
+    glEnable(GL_NORMALIZE);
+    glEnable(GL_COLOR_MATERIAL);
+    glEnable(GL_LIGHTING);
+
+    glutDisplayFunc(display);
+    glutKeyboardFunc(keyboard);
+    glutSpecialFunc(arrowKeyboard);
+    glutIdleFunc(animate);
+
+    glEnable(GL_DEPTH_TEST);
+    if(str == axiom1)
+        generateTree();
+
+    glutMainLoop();
+    return 0;
+}
